@@ -238,3 +238,11 @@ enum NotifStatus {
   SENT
   FAILED
 }
+
+// ─── WAITLIST (holding page email capture) ────────────
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
