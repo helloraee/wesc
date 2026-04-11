@@ -10,7 +10,7 @@ export type {
   AttendanceLog,
   NotificationPreference,
   SessionNotification,
-} from "@/generated/prisma";
+} from "@/generated/prisma/client";
 
 export type {
   Role,
@@ -21,4 +21,4 @@ export type {
   AttendanceStatus,
   NotificationType,
   NotifStatus,
-} from "@/generated/prisma";
+} from "@/generated/prisma/client";
