@@ -13,11 +13,13 @@ export default function BackOfficeLayout({
     <SessionProvider>
       <TooltipProvider>
         <SidebarProvider>
-          <BackOfficeSidebar />
-          <SidebarInset>
-            <BackOfficeHeader />
-            <main className="flex-1 p-6">{children}</main>
-          </SidebarInset>
+          <div className="flex min-h-screen w-full">
+            <BackOfficeSidebar />
+            <SidebarInset className="flex flex-1 flex-col">
+              <BackOfficeHeader />
+              <main className="flex-1 overflow-auto p-6">{children}</main>
+            </SidebarInset>
+          </div>
         </SidebarProvider>
       </TooltipProvider>
     </SessionProvider>

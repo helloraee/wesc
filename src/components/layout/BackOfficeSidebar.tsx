@@ -114,7 +114,7 @@ export function BackOfficeSidebar() {
     .slice(0, 2) ?? "WE";
 
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
         <Link href="/back-office/dashboard" className="flex items-center gap-3">
           <Image
