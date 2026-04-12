@@ -14,7 +14,9 @@
 | **Mascot** | Wolf (geometric crest) |
 | **Brand colours** | Royal blue `#2B3A8F` (primary) · White `#FFFFFF` (contrast) |
 | **Brand ramp** | Single-hue blue scale — see Section 4 |
-| **Logo file** | `public/assets/WEST_Logo.png` |
+| **Logo file** | `public/assets/WEST_Logo.svg` (SVG) and `public/assets/WEST_Logo.png` (PNG fallback) |
+| **Domain** | `westendsportsclub.com` (Cloudflare DNS → DO App Platform) |
+| **Prod URL** | `https://westendsportsclub.com` |
 
 ---
 
@@ -874,3 +876,90 @@ The following are intentionally deferred to Phase 2 and should NOT be built duri
 - Commit migration files to GitHub — they run automatically on DO via build command
 - Keep components small — if a component exceeds ~150 lines, split it
 - Use `cn()` from `src/lib/utils.ts` for all conditional Tailwind class merging
+- Never include `Co-Authored-By` lines in git commit messages
+- Always push to GitHub after completing work
+- All delete operations are hard deletes (not soft deletes) — records are permanently removed from DB
+- shadcn v4 uses `@base-ui/react` — use `render` prop instead of `asChild` for polymorphic components
+- Select `onValueChange` can pass `null` — always handle with `v ?? ""` or fallback
+- SelectValue needs explicit children to show display text (base-ui doesn't auto-resolve value→label)
+- Middleware redirects all non-canonical domains to `westendsportsclub.com` in production
+- The `(back-office)` route group was renamed to `back-office/` (no parens) for actual URL path segments
+
+---
+
+## 18. Current State (Phase 1 — as of 2026-04-13)
+
+### Deployment
+| Component | Details |
+|---|---|
+| **App Platform** | DO App Platform, `sgp` region, auto-deploy from `main` |
+| **App ID** | `991342df-fdcb-47fc-83b3-07229eb07262` |
+| **Database** | DO Managed PostgreSQL 16, `sgp1`, ID: `8ee8552c-1715-4edd-8594-2b6b88a2a05a` |
+| **DB Name** | `wesc` on cluster `wesc-db` |
+| **Domain** | `westendsportsclub.com` (Cloudflare CNAME → DO) |
+| **DO URL** | `wesc-id3kt.ondigitalocean.app` (301 redirects to custom domain) |
+| **Local dev** | Docker Compose: Postgres on port 5433, Redis on port 6379 |
+
+### Actual Tech Stack (differs slightly from original spec)
+| Layer | Planned | Actual |
+|---|---|---|
+| **Framework** | Next.js 14 | Next.js 16 (Turbopack) |
+| **React** | 18.x | 19.x |
+| **Tailwind** | v3 | v4 |
+| **shadcn/ui** | Radix primitives | `@base-ui/react` (shadcn v4) |
+| **PWA** | `next-pwa` | `@serwist/next` (maintained successor) |
+| **Auth** | NextAuth v5 | NextAuth v4 (v5 not published on npm) |
+
+### Phase 1 Build Status
+| Step | Status |
+|---|---|
+| 1. Project scaffold | COMPLETE |
+| 2. Holding page | COMPLETE |
+| 3. Database + Redis | COMPLETE (Docker local + DO Managed prod) |
+| 4. Auth (NextAuth, login, middleware, RBAC) | COMPLETE |
+| 5. Sports management | COMPLETE |
+| 6. Athlete management | COMPLETE |
+| 7. Team management + roster builder | COMPLETE |
+| 8. Session scheduler | COMPLETE (basic — no recurrence UI yet) |
+| 9. Attendance marking | COMPLETE |
+| 10. Reports & analytics | PARTIAL (per-session report done, per-athlete/per-team reports not built) |
+| 11. Notifications (Resend) | NOT STARTED |
+| 12. PWA polish | COMPLETE (service worker, manifest, offline page, icons) |
+
+### Security Measures in Place
+- Security headers: HSTS, X-Frame-Options DENY, nosniff, XSS protection, referrer policy, permissions policy
+- Rate limiting: 10 auth attempts/min per email, 5 waitlist/min per IP
+- ID card numbers excluded from list API responses (detail view only)
+- All API routes auth-protected with `requireAuth()` + role checks
+- All inputs validated with Zod schemas
+- Passwords hashed with bcryptjs (12 rounds)
+- JWT sessions (24h expiry)
+- Middleware forces canonical domain in production
+- No secrets exposed client-side
+
+### Known Remaining Work (Phase 1)
+- Session recurrence UI (daily/weekly/custom — schema supports it, UI not built)
+- Per-athlete attendance reports
+- Per-team attendance reports / heatmaps
+- Notification system (Resend integration, reminder scheduling)
+- CSV athlete import
+- Password change UI for users
+- Attendance report PDF/CSV export
+
+### Admin Credentials (Production)
+- Email: `admin@westendsc.mv`
+- Password: `admin123`
+- **Change this password after first login**
+
+### Local Development
+```bash
+docker compose up -d        # Start Postgres (5433) + Redis (6379)
+npx prisma generate         # Generate Prisma client
+npm run db:seed             # Seed demo data (dev only)
+npm run dev                 # Start dev server on localhost:3000
+```
+
+### GitHub
+- Repo: `https://github.com/helloraee/wesc.git`
+- Branch: `main` = production (auto-deploys to DO)
+- All pushes to `main` trigger automatic redeploy on DO App Platform
