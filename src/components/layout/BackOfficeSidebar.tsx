@@ -141,7 +141,11 @@ export function BackOfficeSidebar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
-                    isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                    isActive={
+                      item.href === "/back-office/attendance"
+                        ? pathname === "/back-office/attendance"
+                        : pathname === item.href || pathname.startsWith(item.href + "/")
+                    }
                   >
                     <item.icon className="size-4" />
                     <span>{item.label}</span>
@@ -161,7 +165,11 @@ export function BackOfficeSidebar() {
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       render={<Link href={item.href} />}
-                      isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                      isActive={
+                      item.href === "/back-office/attendance"
+                        ? pathname === "/back-office/attendance"
+                        : pathname === item.href || pathname.startsWith(item.href + "/")
+                    }
                     >
                       <item.icon className="size-4" />
                       <span>{item.label}</span>
