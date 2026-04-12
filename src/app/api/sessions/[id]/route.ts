@@ -71,3 +71,19 @@ export async function PATCH(
 
   return NextResponse.json({ data: practiceSession });
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await requireAuth(["SUPER_ADMIN", "ADMIN", "TEAM_MANAGER"]);
+  if (!session) return unauthorized();
+
+  const { id } = await params;
+
+  await prisma.attendanceLog.deleteMany({ where: { sessionId: id } });
+  await prisma.sessionNotification.deleteMany({ where: { sessionId: id } });
+  await prisma.practiceSession.delete({ where: { id } });
+
+  return NextResponse.json({ data: { message: "Session deleted" } });
+}

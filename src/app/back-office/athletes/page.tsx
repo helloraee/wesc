@@ -20,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Search } from "lucide-react";
+import { Plus, Pencil, Search, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -39,8 +41,13 @@ type AthleteRow = {
 };
 
 export default function AthletesPage() {
+  const { data: sessionData } = useSession();
+  const canDelete = ["SUPER_ADMIN", "ADMIN", "TEAM_MANAGER"].includes(
+    sessionData?.user?.role ?? ""
+  );
   const [search, setSearch] = useState("");
   const [sportFilter, setSportFilter] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<AthleteRow | null>(null);
   const { data: sportsData } = useSWR("/api/sports", fetcher);
 
   const queryParams = new URLSearchParams();
@@ -99,6 +106,11 @@ export default function AthletesPage() {
     });
     setError("");
     setOpen(true);
+  }
+
+  async function handleDelete(id: string) {
+    await fetch(`/api/athletes/${id}`, { method: "DELETE" });
+    mutate();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -336,9 +348,21 @@ export default function AthletesPage() {
             <Badge variant="outline" className="w-fit text-xs">
               {a.gender}
             </Badge>
-            <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
-              <Pencil className="size-4" />
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                <Pencil className="size-4" />
+              </Button>
+              {canDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmDelete(a)}
+                  className="text-muted-foreground hover:text-red-600"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
+            </div>
           </div>
         ))}
         {athletes.length === 0 && (
@@ -347,6 +371,21 @@ export default function AthletesPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+        title="Delete Athlete"
+        description={`Are you sure you want to deactivate ${confirmDelete?.fullName ?? ""}? This will remove them from active rosters.`}
+        actionLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmDelete) {
+            handleDelete(confirmDelete.id);
+            setConfirmDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

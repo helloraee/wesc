@@ -48,7 +48,7 @@ export default function LoginPage() {
       <Card className="border-w-700 bg-w-800/50 backdrop-blur-sm">
         <CardHeader className="items-center space-y-4 pb-2">
           <Image
-            src="/assets/WEST_Logo.png"
+            src="/assets/WEST_Logo.svg"
             alt="West End Sports Club"
             width={80}
             height={80}

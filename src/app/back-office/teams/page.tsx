@@ -20,8 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Users } from "lucide-react";
+import { Plus, Pencil, Users, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -37,10 +39,15 @@ type TeamRow = {
 };
 
 export default function TeamsPage() {
+  const { data: sessionData } = useSession();
+  const canDelete = ["SUPER_ADMIN", "ADMIN", "TEAM_MANAGER"].includes(
+    sessionData?.user?.role ?? ""
+  );
   const { data: sportsData } = useSWR("/api/sports", fetcher);
   const { data, mutate } = useSWR("/api/teams", fetcher);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TeamRow | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<TeamRow | null>(null);
   const [form, setForm] = useState({
     name: "",
     sportId: "",
@@ -81,6 +88,11 @@ export default function TeamsPage() {
       });
     }
     setOpen(false);
+    mutate();
+  }
+
+  async function handleDelete(id: string) {
+    await fetch(`/api/teams/${id}`, { method: "DELETE" });
     mutate();
   }
 
@@ -222,6 +234,16 @@ export default function TeamsPage() {
               >
                 <Users className="size-4" />
               </Button>
+              {canDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmDelete(team)}
+                  className="text-muted-foreground hover:text-red-600"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
@@ -231,6 +253,21 @@ export default function TeamsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+        title="Delete Team"
+        description={`Are you sure you want to deactivate ${confirmDelete?.name ?? ""}? Athletes assigned to this team will be unaffected.`}
+        actionLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmDelete) {
+            handleDelete(confirmDelete.id);
+            setConfirmDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

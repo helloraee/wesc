@@ -22,8 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, ClipboardCheck, Calendar } from "lucide-react";
+import { Plus, ClipboardCheck, Calendar, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -46,9 +48,14 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function SessionsPage() {
+  const { data: sessionData } = useSession();
+  const canDelete = ["SUPER_ADMIN", "ADMIN", "TEAM_MANAGER"].includes(
+    sessionData?.user?.role ?? ""
+  );
   const { data: teamsData } = useSWR("/api/teams", fetcher);
   const { data, mutate } = useSWR("/api/sessions", fetcher);
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<SessionRow | null>(null);
   const [form, setForm] = useState({
     teamId: "",
     title: "",
@@ -93,6 +100,11 @@ export default function SessionsPage() {
     }
 
     setOpen(false);
+    mutate();
+  }
+
+  async function handleDeleteSession(id: string) {
+    await fetch(`/api/sessions/${id}`, { method: "DELETE" });
     mutate();
   }
 
@@ -250,6 +262,16 @@ export default function SessionsPage() {
               >
                 {s._count.attendanceLogs > 0 ? "Edit" : "Mark"}
               </Button>
+              {canDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmDelete(s)}
+                  className="text-muted-foreground hover:text-red-600"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
             </div>
           </div>
         ))}
@@ -259,6 +281,21 @@ export default function SessionsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}
+        title="Delete Session"
+        description={`Are you sure you want to delete "${confirmDelete?.title || confirmDelete?.team.name}"? Any attendance records for this session will also be removed.`}
+        actionLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmDelete) {
+            handleDeleteSession(confirmDelete.id);
+            setConfirmDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

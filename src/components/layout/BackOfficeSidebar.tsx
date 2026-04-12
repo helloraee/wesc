@@ -118,7 +118,7 @@ export function BackOfficeSidebar() {
       <SidebarHeader className="!p-0 border-b border-sidebar-border">
         <Link href="/back-office/dashboard" className="flex h-14 items-center gap-3 px-4">
           <Image
-            src="/assets/WEST_Logo.png"
+            src="/assets/WEST_Logo.svg"
             alt="WESC"
             width={32}
             height={32}

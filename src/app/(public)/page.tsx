@@ -39,7 +39,7 @@ export default function HoldingPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
-        className="relative z-10 flex flex-col items-center gap-8 px-6 text-center"
+        className="relative z-10 flex flex-col items-center gap-8 border-none px-6 text-center"
       >
         {/* Logo */}
         <motion.div
@@ -48,7 +48,7 @@ export default function HoldingPage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <Image
-            src="/assets/WEST_Logo.png"
+            src="/assets/WEST_Logo.svg"
             alt="West End Sports Club Crest"
             width={160}
             height={160}
