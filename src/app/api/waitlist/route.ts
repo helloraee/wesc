@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().email(),
@@ -8,6 +9,16 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 5 submissions per IP per minute
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    const { success } = rateLimit(`waitlist:${ip}`, 5, 60_000);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many requests", code: "RATE_LIMITED" },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const { email } = schema.parse(body);
 

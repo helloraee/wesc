@@ -37,7 +37,17 @@ export async function GET(req: Request) {
 
   const athletes = await prisma.athlete.findMany({
     where,
-    include: {
+    select: {
+      id: true,
+      fullName: true,
+      jerseyNumber: true,
+      gender: true,
+      contactNumber: true,
+      sportId: true,
+      playingTeamId: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
       sport: { select: { name: true } },
       playingTeam: { select: { name: true } },
     },
