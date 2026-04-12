@@ -115,19 +115,19 @@ export function BackOfficeSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border">
-      <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        <Link href="/back-office/dashboard" className="flex items-center gap-3">
+      <SidebarHeader className="border-b border-sidebar-border px-4">
+        <Link href="/back-office/dashboard" className="flex h-14 items-center gap-3">
           <Image
             src="/assets/WEST_Logo.png"
             alt="WESC"
-            width={36}
-            height={36}
+            width={32}
+            height={32}
           />
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-wider text-sidebar-primary">
               West End SC
             </p>
-            <p className="text-xs text-sidebar-foreground/60">Back Office</p>
+            <p className="text-[10px] leading-tight text-sidebar-foreground/60">Back Office</p>
           </div>
         </Link>
       </SidebarHeader>
