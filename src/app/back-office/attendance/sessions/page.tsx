@@ -227,12 +227,21 @@ export default function SessionsPage() {
                 <span>{s.team.sport.name} — {s.team.name}</span>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {s._count.attendanceLogs > 0 && (
                 <span className="flex items-center gap-1 text-xs text-green-600">
                   <ClipboardCheck className="size-3.5" />
                   {s._count.attendanceLogs} marked
                 </span>
+              )}
+              {s._count.attendanceLogs > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  render={<Link href={`/back-office/attendance/sessions/${s.id}/report`} />}
+                >
+                  Report
+                </Button>
               )}
               <Button
                 variant="outline"

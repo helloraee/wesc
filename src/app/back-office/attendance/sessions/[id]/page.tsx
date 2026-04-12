@@ -18,7 +18,9 @@ import {
   Calendar,
   MapPin,
   Save,
+  FileText,
 } from "lucide-react";
+import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -164,10 +166,20 @@ export default function AttendanceMarkingPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="mr-1 size-4" />
-        Back
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="mr-1 size-4" />
+          Back
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href={`/back-office/attendance/sessions/${sessionId}/report`} />}
+        >
+          <FileText className="mr-1 size-3.5" />
+          View Report
+        </Button>
+      </div>
 
       <PageHeader
         title={practiceSession.title || practiceSession.team.name}
