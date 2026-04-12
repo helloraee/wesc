@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Plus, X, Search, Users } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ export default function TeamRosterPage() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState<Athlete | null>(null);
 
   // Fetch all athletes for the same sport to add to roster
   const { data: allAthletesData } = useSWR(
@@ -181,7 +183,7 @@ export default function TeamRosterPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => removeFromRoster(athlete.id)}
+              onClick={() => setConfirmRemove(athlete)}
               className="text-muted-foreground hover:text-red-600"
             >
               <X className="size-4" />
@@ -194,6 +196,21 @@ export default function TeamRosterPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmRemove}
+        onOpenChange={(open) => { if (!open) setConfirmRemove(null); }}
+        title="Remove from Roster"
+        description={`Are you sure you want to remove ${confirmRemove?.fullName ?? ""} from this team?`}
+        actionLabel="Remove"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmRemove) {
+            removeFromRoster(confirmRemove.id);
+            setConfirmRemove(null);
+          }
+        }}
+      />
     </div>
   );
 }

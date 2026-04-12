@@ -175,57 +175,58 @@ export default function TeamsPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="rounded-lg border border-border">
+        <div className="hidden grid-cols-[1fr_auto_auto_auto_auto_auto] items-center gap-4 border-b border-border bg-muted/50 px-4 py-3 text-sm font-medium text-muted-foreground sm:grid">
+          <span>Team</span>
+          <span>Sport</span>
+          <span>Type</span>
+          <span>Athletes</span>
+          <span>Sessions</span>
+          <span>Actions</span>
+        </div>
         {teams.map((team) => (
           <div
             key={team.id}
-            className="rounded-lg border border-border bg-card p-5"
+            className="grid grid-cols-1 gap-2 border-b border-border px-4 py-3 last:border-0 sm:grid-cols-[1fr_auto_auto_auto_auto_auto] sm:items-center sm:gap-4"
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-medium">{team.name}</h3>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {team.sport.name}
-                </p>
-              </div>
-              <div className="flex gap-1">
-                <Badge variant="outline" className="text-xs">
-                  {team.type}
+            <div>
+              <span className="font-medium">{team.name}</span>
+              {team.gender && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {team.gender}
                 </Badge>
-                {team.gender && (
-                  <Badge variant="secondary" className="text-xs">
-                    {team.gender}
-                  </Badge>
-                )}
-              </div>
+              )}
+              {!team.isActive && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  Inactive
+                </Badge>
+              )}
             </div>
-            <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                <Users className="mr-1 inline size-3.5" />
-                {team._count.playingAthletes + team._count.practiceAthletes}{" "}
-                athletes
-              </span>
-              <span>{team._count.sessions} sessions</span>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(team)}>
-                <Pencil className="mr-1 size-3" />
-                Edit
+            <span className="text-sm text-muted-foreground">{team.sport.name}</span>
+            <Badge variant="outline" className="w-fit text-xs">{team.type}</Badge>
+            <span className="text-sm text-muted-foreground">
+              <Users className="mr-1 inline size-3.5" />
+              {team._count.playingAthletes + team._count.practiceAthletes}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {team._count.sessions}
+            </span>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={() => openEdit(team)}>
+                <Pencil className="size-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="flex-1"
                 render={<Link href={`/back-office/teams/${team.id}`} />}
               >
-                <Users className="mr-1 size-3" />
-                Roster
+                <Users className="size-4" />
               </Button>
             </div>
           </div>
         ))}
         {teams.length === 0 && (
-          <div className="col-span-full rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+          <div className="p-8 text-center text-muted-foreground">
             No teams yet. Create your first team above.
           </div>
         )}

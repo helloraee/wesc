@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Pencil, UserX } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -62,6 +63,7 @@ export default function UsersPage() {
     role: "COACH",
   });
   const [error, setError] = useState("");
+  const [confirmToggle, setConfirmToggle] = useState<UserRow | null>(null);
 
   function openCreate() {
     setEditing(null);
@@ -251,7 +253,13 @@ export default function UsersPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => toggleActive(user)}
+                    onClick={() => {
+                      if (user.isActive) {
+                        setConfirmToggle(user);
+                      } else {
+                        toggleActive(user);
+                      }
+                    }}
                   >
                     <UserX className="size-4" />
                   </Button>
@@ -266,6 +274,21 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        onOpenChange={(open) => { if (!open) setConfirmToggle(null); }}
+        title="Deactivate User"
+        description={`Are you sure you want to deactivate ${confirmToggle?.name ?? ""}? They will no longer be able to log in.`}
+        actionLabel="Deactivate"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmToggle) {
+            toggleActive(confirmToggle);
+            setConfirmToggle(null);
+          }
+        }}
+      />
     </div>
   );
 }

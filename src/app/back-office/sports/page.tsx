@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Pencil } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -22,6 +23,7 @@ export default function SportsPage() {
   const { data, mutate } = useSWR("/api/sports", fetcher);
   const [open, setOpen] = useState(false);
   const [editingSport, setEditingSport] = useState<{ id: string; name: string; slug: string } | null>(null);
+  const [confirmToggle, setConfirmToggle] = useState<{ id: string; name: string; isActive: boolean } | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
 
@@ -159,7 +161,13 @@ export default function SportsPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => toggleActive(sport.id, sport.isActive)}
+                onClick={() => {
+                  if (sport.isActive) {
+                    setConfirmToggle(sport);
+                  } else {
+                    toggleActive(sport.id, sport.isActive);
+                  }
+                }}
               >
                 {sport.isActive ? "Deactivate" : "Activate"}
               </Button>
@@ -172,6 +180,21 @@ export default function SportsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        onOpenChange={(open) => { if (!open) setConfirmToggle(null); }}
+        title="Deactivate Sport"
+        description={`Are you sure you want to deactivate ${confirmToggle?.name ?? ""}? Teams and athletes under this sport won't be affected.`}
+        actionLabel="Deactivate"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmToggle) {
+            toggleActive(confirmToggle.id, confirmToggle.isActive);
+            setConfirmToggle(null);
+          }
+        }}
+      />
     </div>
   );
 }
