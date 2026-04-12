@@ -125,7 +125,9 @@ export default function SessionsPage() {
                 onValueChange={(v) => setForm({ ...form, teamId: v ?? "" })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select team" />
+                  <SelectValue placeholder="Select team">
+                    {(() => { const t = teams.find((t: { id: string; name: string; sport: { name: string } }) => t.id === form.teamId); return t ? `${t.name} (${t.sport.name})` : "Select team"; })()}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {teams.map((t: { id: string; name: string; sport: { name: string } }) => (

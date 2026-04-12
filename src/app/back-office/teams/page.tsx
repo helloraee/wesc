@@ -122,7 +122,9 @@ export default function TeamsPage() {
                 onValueChange={(v) => setForm({ ...form, sportId: v ?? "" })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select sport" />
+                  <SelectValue placeholder="Select sport">
+                    {sports.find((s: { id: string; name: string }) => s.id === form.sportId)?.name ?? "Select sport"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {sports.map((s: { id: string; name: string }) => (

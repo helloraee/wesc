@@ -164,7 +164,9 @@ export default function AthletesPage() {
         </div>
         <Select value={sportFilter} onValueChange={(v) => setSportFilter(v ?? "")}>
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="All Sports" />
+            <SelectValue placeholder="All Sports">
+              {sports.find((s: { id: string; name: string }) => s.id === sportFilter)?.name ?? "All Sports"}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Sports</SelectItem>
@@ -250,7 +252,9 @@ export default function AthletesPage() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select sport" />
+                  <SelectValue placeholder="Select sport">
+                    {sports.find((s: { id: string; name: string }) => s.id === form.sportId)?.name ?? "Select sport"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {sports.map((s: { id: string; name: string }) => (
@@ -271,7 +275,9 @@ export default function AthletesPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="No team assigned" />
+                    <SelectValue placeholder="No team assigned">
+                      {teams.find((t: { id: string; name: string }) => t.id === form.playingTeamId)?.name ?? "No team assigned"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No team</SelectItem>
