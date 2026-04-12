@@ -59,18 +59,35 @@ export async function DELETE(
 
   const { id } = await params;
 
-  // Prevent self-deactivation
+  // Prevent self-deletion
   if (id === session.user.id) {
     return NextResponse.json(
-      { error: "Cannot deactivate your own account", code: "FORBIDDEN" },
+      { error: "Cannot delete your own account", code: "FORBIDDEN" },
       { status: 403 }
     );
   }
 
-  await prisma.user.update({
-    where: { id },
-    data: { isActive: false },
-  });
+  // Unassign from teams, reassign attendance logs to keep history
+  await prisma.team.updateMany({ where: { managerId: id }, data: { managerId: null } });
+  await prisma.team.updateMany({ where: { coachId: id }, data: { coachId: null } });
+  await prisma.notificationPreference.deleteMany({ where: { userId: id } });
 
-  return NextResponse.json({ data: { message: "User deactivated" } });
+  // Delete sessions created by this user (or reassign — for now delete)
+  const sessions = await prisma.practiceSession.findMany({
+    where: { createdById: id },
+    select: { id: true },
+  });
+  const sessionIds = sessions.map((s) => s.id);
+  if (sessionIds.length > 0) {
+    await prisma.attendanceLog.deleteMany({ where: { sessionId: { in: sessionIds } } });
+    await prisma.sessionNotification.deleteMany({ where: { sessionId: { in: sessionIds } } });
+    await prisma.practiceSession.deleteMany({ where: { createdById: id } });
+  }
+
+  // Delete attendance logs marked by this user
+  await prisma.attendanceLog.deleteMany({ where: { markedById: id } });
+
+  await prisma.user.delete({ where: { id } });
+
+  return NextResponse.json({ data: { message: "User deleted" } });
 }

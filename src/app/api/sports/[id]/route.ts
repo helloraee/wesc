@@ -42,10 +42,19 @@ export async function DELETE(
   if (!session) return forbidden();
 
   const { id } = await params;
-  await prisma.sport.update({
-    where: { id },
-    data: { isActive: false },
-  });
 
-  return NextResponse.json({ data: { message: "Sport deactivated" } });
+  // Check if sport has teams or athletes
+  const counts = await prisma.sport.findUnique({
+    where: { id },
+    include: { _count: { select: { teams: true, athletes: true } } },
+  });
+  if (counts && (counts._count.teams > 0 || counts._count.athletes > 0)) {
+    return NextResponse.json(
+      { error: "Cannot delete a sport that has teams or athletes. Remove them first.", code: "HAS_DEPENDENCIES" },
+      { status: 409 }
+    );
+  }
+
+  await prisma.sport.delete({ where: { id } });
+  return NextResponse.json({ data: { message: "Sport deleted" } });
 }

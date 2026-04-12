@@ -63,6 +63,27 @@ export async function DELETE(
   if (!session) return forbidden();
 
   const { id } = await params;
-  await prisma.team.update({ where: { id }, data: { isActive: false } });
-  return NextResponse.json({ data: { message: "Team deactivated" } });
+
+  // Unassign athletes from this playing team
+  await prisma.athlete.updateMany({
+    where: { playingTeamId: id },
+    data: { playingTeamId: null },
+  });
+  // Remove practice team associations
+  await prisma.teamPracticeAthlete.deleteMany({ where: { teamId: id } });
+  // Delete sessions and their attendance logs
+  const sessions = await prisma.practiceSession.findMany({
+    where: { teamId: id },
+    select: { id: true },
+  });
+  const sessionIds = sessions.map((s) => s.id);
+  if (sessionIds.length > 0) {
+    await prisma.attendanceLog.deleteMany({ where: { sessionId: { in: sessionIds } } });
+    await prisma.sessionNotification.deleteMany({ where: { sessionId: { in: sessionIds } } });
+    await prisma.practiceSession.deleteMany({ where: { teamId: id } });
+  }
+  // Delete the team
+  await prisma.team.delete({ where: { id } });
+
+  return NextResponse.json({ data: { message: "Team deleted" } });
 }

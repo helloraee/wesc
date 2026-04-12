@@ -77,10 +77,11 @@ export async function DELETE(
   if (!session) return unauthorized();
 
   const { id } = await params;
-  await prisma.athlete.update({
-    where: { id },
-    data: { isActive: false },
-  });
 
-  return NextResponse.json({ data: { message: "Athlete deactivated" } });
+  // Remove from practice teams, delete attendance logs, then delete athlete
+  await prisma.teamPracticeAthlete.deleteMany({ where: { athleteId: id } });
+  await prisma.attendanceLog.deleteMany({ where: { athleteId: id } });
+  await prisma.athlete.delete({ where: { id } });
+
+  return NextResponse.json({ data: { message: "Athlete deleted" } });
 }

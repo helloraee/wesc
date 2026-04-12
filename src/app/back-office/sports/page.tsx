@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -60,12 +60,12 @@ export default function SportsPage() {
     mutate();
   }
 
-  async function toggleActive(id: string, isActive: boolean) {
-    await fetch(`/api/sports/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !isActive }),
-    });
+  async function handleDelete(id: string) {
+    const res = await fetch(`/api/sports/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || "Failed to delete");
+    }
     mutate();
   }
 
@@ -161,15 +161,10 @@ export default function SportsPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  if (sport.isActive) {
-                    setConfirmToggle(sport);
-                  } else {
-                    toggleActive(sport.id, sport.isActive);
-                  }
-                }}
+                onClick={() => setConfirmToggle(sport)}
+                className="text-muted-foreground hover:text-red-600"
               >
-                {sport.isActive ? "Deactivate" : "Activate"}
+                <Trash2 className="size-4" />
               </Button>
             </div>
           </div>
@@ -184,13 +179,13 @@ export default function SportsPage() {
       <ConfirmDialog
         open={!!confirmToggle}
         onOpenChange={(open) => { if (!open) setConfirmToggle(null); }}
-        title="Deactivate Sport"
-        description={`Are you sure you want to deactivate ${confirmToggle?.name ?? ""}? Teams and athletes under this sport won't be affected.`}
-        actionLabel="Deactivate"
+        title="Delete Sport"
+        description={`Are you sure you want to delete ${confirmToggle?.name ?? ""}? This cannot be undone. Sports with teams or athletes cannot be deleted.`}
+        actionLabel="Delete"
         variant="destructive"
         onConfirm={() => {
           if (confirmToggle) {
-            toggleActive(confirmToggle.id, confirmToggle.isActive);
+            handleDelete(confirmToggle.id);
             setConfirmToggle(null);
           }
         }}

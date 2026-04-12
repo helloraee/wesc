@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, UserX } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -118,14 +118,9 @@ export default function UsersPage() {
     mutate();
   }
 
-  async function toggleActive(user: UserRow) {
+  async function handleDeleteUser(user: UserRow) {
     if (user.id === sessionData?.user?.id) return;
-
-    await fetch(`/api/users/${user.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !user.isActive }),
-    });
+    await fetch(`/api/users/${user.id}`, { method: "DELETE" });
     mutate();
   }
 
@@ -253,15 +248,10 @@ export default function UsersPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      if (user.isActive) {
-                        setConfirmToggle(user);
-                      } else {
-                        toggleActive(user);
-                      }
-                    }}
+                    onClick={() => setConfirmToggle(user)}
+                    className="text-muted-foreground hover:text-red-600"
                   >
-                    <UserX className="size-4" />
+                    <Trash2 className="size-4" />
                   </Button>
                 )}
               </div>
@@ -278,13 +268,13 @@ export default function UsersPage() {
       <ConfirmDialog
         open={!!confirmToggle}
         onOpenChange={(open) => { if (!open) setConfirmToggle(null); }}
-        title="Deactivate User"
-        description={`Are you sure you want to deactivate ${confirmToggle?.name ?? ""}? They will no longer be able to log in.`}
-        actionLabel="Deactivate"
+        title="Delete User"
+        description={`Are you sure you want to permanently delete ${confirmToggle?.name ?? ""}? This will remove their account and all associated data.`}
+        actionLabel="Delete"
         variant="destructive"
         onConfirm={() => {
           if (confirmToggle) {
-            toggleActive(confirmToggle);
+            handleDeleteUser(confirmToggle);
             setConfirmToggle(null);
           }
         }}
