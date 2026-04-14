@@ -154,11 +154,15 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Email *</Label>
+              <Label>Username *</Label>
               <Input
-                type="email"
+                type="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => setForm({ ...form, email: e.target.value.trim() })}
+                placeholder="e.g. ahmed"
                 required
               />
             </div>

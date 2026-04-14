@@ -61,7 +61,7 @@ export default function SessionsPage() {
     title: "",
     location: "",
     scheduledAt: "",
-    durationMinutes: 90,
+    durationMinutes: "90",
     notes: "",
   });
   const [error, setError] = useState("");
@@ -72,7 +72,7 @@ export default function SessionsPage() {
       title: "",
       location: "",
       scheduledAt: "",
-      durationMinutes: 90,
+      durationMinutes: "90",
       notes: "",
     });
     setError("");
@@ -83,11 +83,18 @@ export default function SessionsPage() {
     e.preventDefault();
     setError("");
 
+    const duration = parseInt(form.durationMinutes, 10);
+    if (!Number.isFinite(duration) || duration < 1) {
+      setError("Duration must be at least 1 minute");
+      return;
+    }
+
     const res = await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        durationMinutes: duration,
         title: form.title || null,
         notes: form.notes || null,
       }),
@@ -174,15 +181,12 @@ export default function SessionsPage() {
                 <Label>Duration (min)</Label>
                 <Input
                   type="number"
+                  inputMode="numeric"
                   value={form.durationMinutes}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      durationMinutes: parseInt(e.target.value) || 90,
-                    })
+                    setForm({ ...form, durationMinutes: e.target.value })
                   }
-                  min={15}
-                  step={15}
+                  min={1}
                 />
               </div>
             </div>

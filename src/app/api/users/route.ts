@@ -6,7 +6,7 @@ import { requireAuth, unauthorized, forbidden } from "@/lib/auth-helpers";
 
 const createSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.string().min(1).max(64),
   password: z.string().min(6),
   role: z.enum(["SUPER_ADMIN", "ADMIN", "TEAM_MANAGER", "COACH"]),
 });
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const err = e as { code?: string };
     if (err.code === "P2002") {
       return NextResponse.json(
-        { error: "Email already exists", code: "DUPLICATE" },
+        { error: "Username already exists", code: "DUPLICATE" },
         { status: 409 }
       );
     }

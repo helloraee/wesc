@@ -6,7 +6,7 @@ import { requireAuth, forbidden } from "@/lib/auth-helpers";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
-  email: z.string().email().optional(),
+  email: z.string().min(1).max(64).optional(),
   password: z.string().min(6).optional(),
   role: z.enum(["SUPER_ADMIN", "ADMIN", "TEAM_MANAGER", "COACH"]).optional(),
   isActive: z.boolean().optional(),
