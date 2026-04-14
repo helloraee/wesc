@@ -4,6 +4,33 @@ import { getToken } from "next-auth/jwt";
 const PUBLIC_HOST = "westendsportsclub.com";
 const OPS_HOST = "ops.westendsportsclub.com";
 
+// Paths that must ONLY exist on the ops subdomain. Anything under these
+// prefixes returns 404 on the apex (public) host — no redirect, no leak.
+function isOpsOnlyPath(pathname: string): boolean {
+  if (pathname.startsWith("/back-office")) return true;
+  if (pathname.startsWith("/login")) return true;
+  if (pathname.startsWith("/forgot-password")) return true;
+  if (pathname.startsWith("/api/auth")) return true;
+  if (
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/waitlist")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function notFound(): NextResponse {
+  return new NextResponse(null, {
+    status: 404,
+    headers: {
+      "content-type": "text/plain",
+      // Don't let any cache serve this — belt and braces
+      "cache-control": "no-store, no-cache, must-revalidate, max-age=0",
+    },
+  });
+}
+
 export default async function middleware(req: NextRequest) {
   const host = (req.headers.get("host") || "").toLowerCase();
   const { pathname, search } = req.nextUrl;
@@ -28,17 +55,11 @@ export default async function middleware(req: NextRequest) {
 
     const onOps = host === OPS_HOST;
     const onApex = host === PUBLIC_HOST;
-    const isOpsPath =
-      pathname.startsWith("/back-office") ||
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/forgot-password");
 
-    // Apex: back-office/login/forgot-password live on ops only
-    if (onApex && isOpsPath) {
-      return NextResponse.redirect(
-        `https://${OPS_HOST}${pathname}${search}`,
-        301
-      );
+    // Apex: ops-only paths return a bare 404. No redirect — do not
+    // reveal that an admin surface exists on another host.
+    if (onApex && isOpsOnlyPath(pathname)) {
+      return notFound();
     }
 
     // Ops: only serve ops paths. Root → dashboard. Public paths → apex.
@@ -49,7 +70,18 @@ export default async function middleware(req: NextRequest) {
           302
         );
       }
-      if (!isOpsPath && pathname !== "/offline") {
+      // Allow ops-only paths, the offline page, and static Next internals
+      const allowedOnOps =
+        isOpsOnlyPath(pathname) ||
+        pathname === "/offline" ||
+        pathname.startsWith("/_next") ||
+        pathname.startsWith("/assets") ||
+        pathname.startsWith("/icons") ||
+        pathname === "/favicon.ico" ||
+        pathname === "/manifest.json" ||
+        pathname === "/sw.js";
+      if (!allowedOnOps) {
+        // Public page requested on ops → send to apex equivalent
         return NextResponse.redirect(
           `https://${PUBLIC_HOST}${pathname}${search}`,
           301
@@ -58,7 +90,7 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // Auth gate for back-office paths (runs on any host in dev, ops in prod)
+  // Auth gate for back-office paths
   if (pathname.startsWith("/back-office")) {
     const token = await getToken({
       req,
@@ -75,7 +107,10 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Run on everything except static asset paths that must stream as-is.
+  // Note: /api IS included here (so we can 404 admin APIs on apex), but
+  // /_next/static and /_next/image are not (those are framework assets).
   matcher: [
-    "/((?!api|_next/static|_next/image|assets|icons|favicon|manifest|sw).*)",
+    "/((?!_next/static|_next/image|assets|icons|favicon.ico|manifest.json|sw.js).*)",
   ],
 };
