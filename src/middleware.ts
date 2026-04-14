@@ -68,7 +68,14 @@ export default withAuth(
     },
     callbacks: {
       authorized: ({ token, req }) => {
-        // Only require auth for back-office routes
+        const host = (req.headers.get("host") || "").toLowerCase();
+        // On apex, the middleware function redirects /back-office/* to ops
+        // before auth is considered. Always authorize apex so the middleware
+        // function runs and performs the host rewrite.
+        if (host === PUBLIC_HOST || host === `www.${PUBLIC_HOST}`) {
+          return true;
+        }
+        // On ops (or any other host), require a token for back-office routes.
         if (req.nextUrl.pathname.startsWith("/back-office")) {
           return !!token;
         }
