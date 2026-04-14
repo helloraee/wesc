@@ -882,12 +882,15 @@ The following are intentionally deferred to Phase 2 and should NOT be built duri
 - shadcn v4 uses `@base-ui/react` — use `render` prop instead of `asChild` for polymorphic components
 - Select `onValueChange` can pass `null` — always handle with `v ?? ""` or fallback
 - SelectValue needs explicit children to show display text (base-ui doesn't auto-resolve value→label)
-- Middleware redirects all non-canonical domains to `westendsportsclub.com` in production
+- Middleware enforces two-host topology in production (apex = public, ops = back-office). See §18 Host Topology.
 - The `(back-office)` route group was renamed to `back-office/` (no parens) for actual URL path segments
+- When adding a new admin route or API endpoint: verify it returns 404 on the apex host. The middleware's `isOpsOnlyPath()` function is the allowlist — update it if you add new routes that should only live on ops.
+- When adding a new public API route: whitelist it alongside `/api/waitlist` in `isOpsOnlyPath()`, otherwise it will 404 on the apex.
+- Do NOT use `withAuth` from `next-auth/middleware` in `src/middleware.ts` — it short-circuits the signIn page and bypasses host gating. Use `getToken()` directly.
 
 ---
 
-## 18. Current State (Phase 1 — as of 2026-04-13)
+## 18. Current State (Phase 1 — as of 2026-04-15)
 
 ### Deployment
 | Component | Details |
@@ -895,10 +898,48 @@ The following are intentionally deferred to Phase 2 and should NOT be built duri
 | **App Platform** | DO App Platform, `sgp` region, auto-deploy from `main` |
 | **App ID** | `991342df-fdcb-47fc-83b3-07229eb07262` |
 | **Database** | DO Managed PostgreSQL 16, `sgp1`, ID: `8ee8552c-1715-4edd-8594-2b6b88a2a05a` |
+| **DB Tier** | `db-s-1vcpu-1gb` Basic **production** tier, 1 node (no HA standby), daily backups on |
 | **DB Name** | `wesc` on cluster `wesc-db` |
-| **Domain** | `westendsportsclub.com` (Cloudflare CNAME → DO) |
-| **DO URL** | `wesc-id3kt.ondigitalocean.app` (301 redirects to custom domain) |
+| **DB Trusted Sources** | **OFF** — password + SSL only (see Host Topology below for why) |
+| **Public domain** | `westendsportsclub.com` (Cloudflare CNAME → DO, proxied) — holding page + waitlist only |
+| **Ops subdomain** | `ops.westendsportsclub.com` (Cloudflare CNAME → DO, proxied) — back-office + login |
+| **DO URL** | `wesc-id3kt.ondigitalocean.app` (301 redirects to apex) |
 | **Local dev** | Docker Compose: Postgres on port 5433, Redis on port 6379 |
+
+### Host Topology & Routing (critical — do not break)
+
+Two hostnames serve the same Next.js app. `src/middleware.ts` gates what each host serves:
+
+**`westendsportsclub.com` (apex, public face):**
+- Serves `/` (holding page) and `POST /api/waitlist` (email capture)
+- All other admin surface returns **bare 404** — no redirect, no Location header:
+  - `/login`, `/back-office/*`, `/forgot-password`
+  - `/api/auth/*` (NextAuth)
+  - `/api/users`, `/api/sessions`, `/api/sports`, `/api/teams`, `/api/athletes`, `/api/attendance`, `/api/notifications`
+- **Do NOT 301 → ops** from admin paths. The whole point is the public domain must not leak that an admin exists elsewhere.
+
+**`ops.westendsportsclub.com` (back-office):**
+- `/` → 302 → `/back-office/dashboard`
+- `/login` serves login page; `/back-office/*` is auth-gated via `getToken()` in middleware (307 → `/login?callbackUrl=...` if no token)
+- Public paths like `/about` → 301 → apex
+- `/offline`, `/_next/*`, static assets served normally
+
+**Middleware does NOT use `next-auth/middleware` `withAuth`** — it short-circuits the signIn page (`/login`) and bypasses host gating. We use a plain middleware that calls `getToken()` manually for the auth check.
+
+**Login page MUST be dynamic** — `src/app/(auth)/layout.tsx` has `export const dynamic = "force-dynamic"` so Next.js doesn't prerender `/login` into a static HTML blob that bypasses middleware checks.
+
+### NEXTAUTH_URL
+- Set to `https://ops.westendsportsclub.com` (not apex). Login only happens on ops; this is the NextAuth callback URL.
+
+### Why DB trusted sources are off
+DO App Platform's **build pods** egress from different IPs than the **runtime pods**, and the `app:<uuid>` trusted source rule only covers runtime. Since `prisma migrate deploy` runs in the build step, enabling the trusted source breaks the build with `P1001: Can't reach database server`. Options for later:
+1. Leave off (current). Password + SSL still protects the DB.
+2. Move `prisma migrate deploy` out of the build command into a runtime startup hook or a separate App Platform "job" component, then re-enable the trusted source covering only the runtime. Proper long-term fix, deferred.
+
+### App spec gotchas
+- `DATABASE_URL` is set as a **manual encrypted secret at `RUN_AND_BUILD_TIME`**, NOT via `${wesc-db.DATABASE_URL}` binding. Managed-DB bindings only resolve at runtime — at build time they expand to an empty string, which crashes Prisma. Do not "simplify" the spec by removing the manual entry.
+- Do NOT add a second `DATABASE_URL` entry (at `RUN_TIME` with the managed binding). DO dedupes env vars by key and the last entry wins — you will silently wipe build-time access to the DB.
+- Both `westendsportsclub.com` (PRIMARY) and `ops.westendsportsclub.com` (ALIAS) must be in the spec's `domains:` block. Adding a domain via the DO Networking UI can silently replace the full list — always diff the spec after.
 
 ### Actual Tech Stack (differs slightly from original spec)
 | Layer | Planned | Actual |
@@ -927,14 +968,16 @@ The following are intentionally deferred to Phase 2 and should NOT be built duri
 | 12. PWA polish | COMPLETE (service worker, manifest, offline page, icons) |
 
 ### Security Measures in Place
+- **Host isolation**: admin surface (`/login`, `/back-office/*`, `/forgot-password`, all admin `/api/*`, `/api/auth/*`) returns bare 404 on the public apex — only reachable on `ops.westendsportsclub.com`. No Location header leaks.
+- `x-powered-by` header disabled (`poweredByHeader: false` in `next.config.ts`)
 - Security headers: HSTS, X-Frame-Options DENY, nosniff, XSS protection, referrer policy, permissions policy
-- Rate limiting: 10 auth attempts/min per email, 5 waitlist/min per IP
+- Rate limiting: 10 auth attempts/min per username, 5 waitlist/min per IP
 - ID card numbers excluded from list API responses (detail view only)
 - All API routes auth-protected with `requireAuth()` + role checks
 - All inputs validated with Zod schemas
 - Passwords hashed with bcryptjs (12 rounds)
 - JWT sessions (24h expiry)
-- Middleware forces canonical domain in production
+- Middleware forces canonical hosts (apex and ops) in production
 - No secrets exposed client-side
 
 ### Known Remaining Work (Phase 1)
@@ -946,10 +989,14 @@ The following are intentionally deferred to Phase 2 and should NOT be built duri
 - Password change UI for users
 - Attendance report PDF/CSV export
 
+### Auth model
+- **Users log in with a username**, not an email. The DB column is still named `email` internally (no migration was done — the existing column is repurposed as a free-form username string), but the UI label, login form, and validation all treat it as a username. Do NOT re-introduce `z.string().email()` validation on the user create/edit API.
+- Login only happens on `ops.westendsportsclub.com/login`. The apex returns 404 for `/login`.
+
 ### Admin Credentials (Production)
-- Email: `admin@westendsc.mv`
+- Username: `admin@westendsc.mv` (legacy — still works, email-format is a valid username string)
 - Password: `admin123`
-- **Change this password after first login**
+- **Change this password after first login.** New users can be created with plain usernames like `ahmed`, `coach1`, etc.
 
 ### Local Development
 ```bash
